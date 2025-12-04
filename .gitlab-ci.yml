@@ -3,6 +3,8 @@ stages:
 
 build:
   stage: build
+  tags:
+    - docker
   image:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
     entrypoint: [""]
