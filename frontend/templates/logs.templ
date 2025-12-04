@@ -1,0 +1,676 @@
+package templates
+
+templ Logs() {
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<title>Logs - Todo App</title>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+		<style>
+			* { box-sizing: border-box; margin: 0; padding: 0; }
+			body {
+				font-family: 'JetBrains Mono', 'SF Mono', monospace;
+				background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+				min-height: 100vh;
+				color: #e4e4e4;
+				padding: 2rem;
+			}
+			.container {
+				max-width: 1200px;
+				margin: 0 auto;
+			}
+			h1 {
+				font-size: 2.5rem;
+				margin-bottom: 0;
+				background: linear-gradient(90deg, #e94560, #ff6b6b);
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+			}
+			.header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 2rem;
+			}
+			.nav-link {
+				color: #888;
+				text-decoration: none;
+				padding: 0.5rem 1rem;
+				border: 1px solid #444;
+				border-radius: 8px;
+				font-size: 0.85rem;
+				transition: all 0.2s;
+			}
+			.nav-link:hover {
+				border-color: #e94560;
+				color: #e94560;
+			}
+			.filters {
+				display: flex;
+				gap: 1rem;
+				margin-bottom: 1.5rem;
+				flex-wrap: wrap;
+			}
+			.filter-group {
+				display: flex;
+				flex-direction: column;
+				gap: 0.25rem;
+			}
+			.filter-group label {
+				font-size: 0.75rem;
+				color: #888;
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+			}
+			select, input[type="text"] {
+				padding: 0.75rem 1rem;
+				border: 2px solid #2d4059;
+				border-radius: 8px;
+				background: rgba(255,255,255,0.05);
+				color: #fff;
+				font-size: 0.9rem;
+				font-family: inherit;
+				outline: none;
+				transition: border-color 0.2s;
+				min-width: 150px;
+			}
+			select:focus, input[type="text"]:focus {
+				border-color: #e94560;
+			}
+			select option {
+				background: #1a1a2e;
+				color: #fff;
+			}
+			.search-input {
+				min-width: 250px;
+			}
+			.log-table {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 0.85rem;
+			}
+			.log-table th {
+				text-align: left;
+				padding: 1rem;
+				background: rgba(255,255,255,0.05);
+				border-bottom: 2px solid #2d4059;
+				color: #888;
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+				font-size: 0.75rem;
+			}
+			.log-table td {
+				padding: 0.75rem 1rem;
+				border-bottom: 1px solid rgba(255,255,255,0.05);
+				vertical-align: top;
+			}
+			.log-table tr:hover {
+				background: rgba(255,255,255,0.03);
+			}
+			.level-badge {
+				display: inline-block;
+				padding: 0.25rem 0.5rem;
+				border-radius: 4px;
+				font-size: 0.7rem;
+				font-weight: 600;
+				text-transform: uppercase;
+			}
+			.level-INFO { background: #2d4059; color: #6bcb77; }
+			.level-WARN { background: #4a3f35; color: #ffd93d; }
+			.level-ERROR { background: #4a2c2a; color: #ff6b6b; }
+			.level-DEBUG { background: #2d3a4a; color: #74b9ff; }
+			.source-badge {
+				display: inline-block;
+				padding: 0.25rem 0.5rem;
+				border-radius: 4px;
+				font-size: 0.7rem;
+				background: #2d4059;
+				color: #a29bfe;
+			}
+			.user-badge {
+				display: inline-block;
+				padding: 0.25rem 0.5rem;
+				border-radius: 4px;
+				font-size: 0.7rem;
+				background: #2d4059;
+				color: #6bcb77;
+			}
+			.log-message {
+				max-width: 400px;
+				word-break: break-word;
+			}
+			.log-data {
+				font-size: 0.75rem;
+				color: #888;
+				max-width: 300px;
+				word-break: break-word;
+			}
+			.log-data code {
+				background: rgba(0,0,0,0.3);
+				padding: 0.1rem 0.3rem;
+				border-radius: 3px;
+			}
+			.timestamp {
+				color: #666;
+				font-size: 0.8rem;
+				white-space: nowrap;
+			}
+			.pagination {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 1rem;
+				margin-top: 2rem;
+			}
+			.pagination button {
+				padding: 0.5rem 1rem;
+				border: 1px solid #2d4059;
+				border-radius: 6px;
+				background: transparent;
+				color: #e4e4e4;
+				font-family: inherit;
+				cursor: pointer;
+				transition: all 0.2s;
+			}
+			.pagination button:hover:not(:disabled) {
+				border-color: #e94560;
+				color: #e94560;
+			}
+			.pagination button:disabled {
+				opacity: 0.3;
+				cursor: not-allowed;
+			}
+			.pagination-info {
+				color: #888;
+				font-size: 0.85rem;
+			}
+			.empty-state {
+				text-align: center;
+				padding: 4rem 2rem;
+				color: #666;
+			}
+			.loading {
+				text-align: center;
+				padding: 2rem;
+				color: #888;
+			}
+			@keyframes pulse {
+				0%, 100% { opacity: 1; }
+				50% { opacity: 0.5; }
+			}
+			.loading-indicator {
+				animation: pulse 1.5s infinite;
+			}
+			.stats {
+				display: flex;
+				gap: 2rem;
+				margin-bottom: 1.5rem;
+				padding: 1rem;
+				background: rgba(255,255,255,0.03);
+				border-radius: 8px;
+			}
+			.stat {
+				text-align: center;
+			}
+			.stat-value {
+				font-size: 1.5rem;
+				font-weight: 600;
+				color: #e94560;
+			}
+			.stat-label {
+				font-size: 0.7rem;
+				color: #888;
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+			}
+			.chart-container {
+				background: rgba(255,255,255,0.03);
+				border-radius: 8px;
+				padding: 1.5rem;
+				margin-bottom: 1.5rem;
+			}
+			.chart-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 1rem;
+			}
+			.chart-title {
+				font-size: 0.85rem;
+				color: #888;
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+			}
+			.interval-select {
+				padding: 0.4rem 0.8rem;
+				border: 1px solid #2d4059;
+				border-radius: 6px;
+				background: rgba(255,255,255,0.05);
+				color: #fff;
+				font-size: 0.8rem;
+				font-family: inherit;
+				cursor: pointer;
+			}
+			.interval-select:focus {
+				border-color: #e94560;
+				outline: none;
+			}
+			#timelineChart {
+				max-height: 200px;
+			}
+			.bulk-actions {
+				display: flex;
+				align-items: center;
+				gap: 1rem;
+				margin-bottom: 1rem;
+				padding: 0.75rem 1rem;
+				background: rgba(233, 69, 96, 0.1);
+				border: 1px solid rgba(233, 69, 96, 0.3);
+				border-radius: 8px;
+			}
+			.bulk-actions span {
+				color: #e94560;
+				font-size: 0.85rem;
+			}
+			.delete-btn {
+				padding: 0.5rem 1rem;
+				background: #e94560;
+				border: none;
+				border-radius: 6px;
+				color: white;
+				cursor: pointer;
+				font-family: inherit;
+				font-size: 0.85rem;
+				transition: background 0.2s;
+			}
+			.delete-btn:hover {
+				background: #d63850;
+			}
+			.checkbox-cell {
+				width: 40px;
+				text-align: center;
+			}
+			.checkbox-cell input[type="checkbox"] {
+				width: 16px;
+				height: 16px;
+				cursor: pointer;
+				accent-color: #e94560;
+			}
+			.reset-btn {
+				padding: 0.5rem 1rem;
+				border: 1px solid #888;
+				border-radius: 6px;
+				background: transparent;
+				color: #888;
+				cursor: pointer;
+				font-family: inherit;
+				font-size: 0.85rem;
+				transition: all 0.2s;
+			}
+			.reset-btn:hover {
+				border-color: #e94560;
+				color: #e94560;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container" x-data="logsApp()">
+			<div class="header">
+				<h1>✦ logs</h1>
+				<form action="/admin/logout" method="POST" style="margin: 0;">
+					<button type="submit" class="nav-link" style="background: transparent; cursor: pointer;">Logout</button>
+				</form>
+			</div>
+
+			<div class="stats">
+				<div class="stat">
+					<div class="stat-value" x-text="total"></div>
+					<div class="stat-label">Total Logs</div>
+				</div>
+				<div class="stat">
+					<div class="stat-value" x-text="logs.filter(l => l.level === 'ERROR').length"></div>
+					<div class="stat-label">Errors (page)</div>
+				</div>
+				<div class="stat">
+					<div class="stat-value" x-text="logs.filter(l => l.level === 'WARN').length"></div>
+					<div class="stat-label">Warnings (page)</div>
+				</div>
+			</div>
+
+			<div class="chart-container">
+				<div class="chart-header">
+					<span class="chart-title">Log Events Over Time</span>
+					<select class="interval-select" x-model="timelineInterval" @change="fetchTimeline()">
+						<option value="minute">Per Minute</option>
+						<option value="hour">Per Hour</option>
+						<option value="day">Per Day</option>
+					</select>
+				</div>
+				<canvas id="timelineChart"></canvas>
+			</div>
+
+			<div class="filters">
+				<div class="filter-group">
+					<label>Level</label>
+					<select x-model="filters.level" @change="fetchLogs()">
+						<option value="">All Levels</option>
+						<option value="DEBUG">Debug</option>
+						<option value="INFO">Info</option>
+						<option value="WARN">Warning</option>
+						<option value="ERROR">Error</option>
+					</select>
+				</div>
+				<div class="filter-group">
+					<label>Source</label>
+					<select x-model="filters.source" @change="fetchLogs()">
+						<option value="">All Sources</option>
+						<template x-for="src in sources" :key="src">
+							<option :value="src" x-text="src"></option>
+						</template>
+					</select>
+				</div>
+				<div class="filter-group">
+					<label>Search</label>
+					<input 
+						type="text" 
+						class="search-input"
+						placeholder="Search messages..."
+						x-model="filters.search"
+						@input.debounce.300ms="fetchLogs()"
+					/>
+				</div>
+				<div class="filter-group" x-show="filters.level || filters.source || filters.search" style="align-self: flex-end;">
+					<button class="reset-btn" @click="resetFilters()">Reset</button>
+				</div>
+			</div>
+
+			<div class="bulk-actions" x-show="selectedIds.length > 0" x-cloak>
+				<span x-text="selectedIds.length + ' selected'"></span>
+				<button class="delete-btn" @click="bulkDelete()">Delete Selected</button>
+			</div>
+
+			<template x-if="loading && logs.length === 0">
+				<div class="loading">
+					<span class="loading-indicator">Loading logs...</span>
+				</div>
+			</template>
+
+			<template x-if="!loading && logs.length === 0">
+				<div class="empty-state">
+					<p>No logs found matching your filters.</p>
+				</div>
+			</template>
+
+			<template x-if="logs.length > 0">
+				<div>
+					<table class="log-table">
+						<thead>
+							<tr>
+								<th class="checkbox-cell">
+									<input type="checkbox" :checked="allSelected" @change="toggleAll()" />
+								</th>
+								<th>Time</th>
+								<th>Level</th>
+								<th>Source</th>
+								<th>User</th>
+								<th>Message</th>
+								<th>Data</th>
+							</tr>
+						</thead>
+						<tbody>
+							<template x-for="log in logs" :key="log.id">
+								<tr>
+									<td class="checkbox-cell">
+										<input type="checkbox" :checked="selectedIds.includes(log.id)" @change="toggleSelect(log.id)" />
+									</td>
+									<td class="timestamp" x-text="formatTime(log.created_at)"></td>
+									<td>
+										<span class="level-badge" :class="'level-' + log.level" x-text="log.level"></span>
+									</td>
+									<td>
+										<span x-show="log.source" class="source-badge" x-text="log.source"></span>
+										<span x-show="!log.source" style="color: #444;">—</span>
+									</td>
+									<td>
+										<span x-show="log.user" class="user-badge" x-text="log.user.email"></span>
+										<span x-show="!log.user" style="color: #444;">—</span>
+									</td>
+									<td class="log-message" x-text="log.message"></td>
+									<td class="log-data">
+										<code x-show="log.data" x-text="formatData(log.data)"></code>
+									</td>
+								</tr>
+							</template>
+						</tbody>
+					</table>
+
+					<div class="pagination">
+						<button @click="prevPage()" :disabled="page <= 1">← Prev</button>
+						<span class="pagination-info">
+							Page <span x-text="page"></span> of <span x-text="totalPages"></span>
+						</span>
+						<button @click="nextPage()" :disabled="page >= totalPages">Next →</button>
+					</div>
+				</div>
+			</template>
+		</div>
+
+		<script>
+			function logsApp() {
+				return {
+					logs: [],
+					sources: [],
+					loading: true,
+					page: 1,
+					perPage: 50,
+					total: 0,
+					filters: {
+						level: '',
+						source: '',
+						search: ''
+					},
+					timelineInterval: 'hour',
+					timelineChart: null,
+					selectedIds: [],
+
+					get totalPages() {
+						return Math.ceil(this.total / this.perPage) || 1;
+					},
+
+					get allSelected() {
+						return this.logs.length > 0 && this.selectedIds.length === this.logs.length;
+					},
+
+					toggleAll() {
+						if (this.allSelected) {
+							this.selectedIds = [];
+						} else {
+							this.selectedIds = this.logs.map(l => l.id);
+						}
+					},
+
+					toggleSelect(id) {
+						const idx = this.selectedIds.indexOf(id);
+						if (idx > -1) {
+							this.selectedIds.splice(idx, 1);
+						} else {
+							this.selectedIds.push(id);
+						}
+					},
+
+					async bulkDelete() {
+						if (this.selectedIds.length === 0) return;
+						if (!confirm(`Delete ${this.selectedIds.length} log(s)?`)) return;
+						
+						try {
+							await fetch('/admin/api/logs', {
+								method: 'DELETE',
+								headers: { 'Content-Type': 'application/json' },
+								body: JSON.stringify({ ids: this.selectedIds })
+							});
+							this.selectedIds = [];
+							await this.fetchLogs();
+							await this.fetchTimeline();
+						} catch (e) {
+							console.error('Failed to delete logs:', e);
+						}
+					},
+
+					resetFilters() {
+						this.filters.level = '';
+						this.filters.source = '';
+						this.filters.search = '';
+						this.page = 1;
+						this.fetchLogs();
+					},
+
+					async init() {
+						await this.fetchSources();
+						await this.fetchLogs();
+						await this.fetchTimeline();
+					},
+
+					async fetchTimeline() {
+						try {
+							const res = await fetch('/admin/api/logs/timeline?interval=' + this.timelineInterval);
+							const data = await res.json();
+							this.renderChart(data);
+						} catch (e) {
+							console.error('Failed to fetch timeline:', e);
+						}
+					},
+
+					renderChart(data) {
+						const ctx = document.getElementById('timelineChart').getContext('2d');
+						
+						if (this.timelineChart) {
+							this.timelineChart.destroy();
+						}
+
+						const labels = data.map(d => this.formatChartLabel(d.time));
+						const counts = data.map(d => d.count);
+
+						this.timelineChart = new Chart(ctx, {
+							type: 'line',
+							data: {
+								labels: labels,
+								datasets: [{
+									label: 'Log Events',
+									data: counts,
+									borderColor: '#e94560',
+									backgroundColor: 'rgba(233, 69, 96, 0.1)',
+									borderWidth: 2,
+									fill: true,
+									tension: 0.3,
+									pointRadius: 3,
+									pointBackgroundColor: '#e94560'
+								}]
+							},
+							options: {
+								responsive: true,
+								maintainAspectRatio: false,
+								plugins: {
+									legend: { display: false }
+								},
+								scales: {
+									x: {
+										grid: { color: 'rgba(255,255,255,0.05)' },
+										ticks: { color: '#666', maxTicksLimit: 12 }
+									},
+									y: {
+										beginAtZero: true,
+										grid: { color: 'rgba(255,255,255,0.05)' },
+										ticks: { color: '#666', precision: 0 }
+									}
+								}
+							}
+						});
+					},
+
+					formatChartLabel(time) {
+						if (this.timelineInterval === 'day') {
+							return time.slice(5); // MM-DD
+						} else if (this.timelineInterval === 'hour') {
+							return time.slice(5, 13); // MM-DD HH
+						}
+						return time.slice(11); // HH:MM
+					},
+
+					async fetchSources() {
+						try {
+							const res = await fetch('/admin/api/logs/sources');
+							this.sources = await res.json();
+						} catch (e) {
+							console.error('Failed to fetch sources:', e);
+						}
+					},
+
+					async fetchLogs() {
+						this.loading = true;
+						this.selectedIds = [];
+						try {
+							const params = new URLSearchParams({
+								page: this.page,
+								per_page: this.perPage
+							});
+							if (this.filters.level) params.set('level', this.filters.level);
+							if (this.filters.source) params.set('source', this.filters.source);
+							if (this.filters.search) params.set('search', this.filters.search);
+
+							const res = await fetch('/admin/api/logs?' + params);
+							const data = await res.json();
+							this.logs = data.logs || [];
+							this.total = data.total || 0;
+						} catch (e) {
+							console.error('Failed to fetch logs:', e);
+							this.logs = [];
+						}
+						this.loading = false;
+					},
+
+					prevPage() {
+						if (this.page > 1) {
+							this.page--;
+							this.fetchLogs();
+						}
+					},
+
+					nextPage() {
+						if (this.page < this.totalPages) {
+							this.page++;
+							this.fetchLogs();
+						}
+					},
+
+					formatTime(ts) {
+						const d = new Date(ts);
+						return d.toLocaleString('en-US', {
+							month: 'short',
+							day: 'numeric',
+							hour: '2-digit',
+							minute: '2-digit',
+							second: '2-digit'
+						});
+					},
+
+					formatData(data) {
+						if (!data) return '';
+						try {
+							const obj = JSON.parse(data);
+							return Object.entries(obj)
+								.map(([k, v]) => `${k}=${JSON.stringify(v)}`)
+								.join(' ');
+						} catch {
+							return data;
+						}
+					}
+				};
+			}
+		</script>
+	</body>
+	</html>
+}
+

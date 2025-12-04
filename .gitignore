@@ -1,0 +1,39 @@
+# IDE and editor folders
+.cursor/
+.history/
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Database files
+*.db
+
+# Compiled binaries
+todo-app
+/go-saml-reverse-proxy
+
+# Private keys and certificates
+*.pem
+*.key
+
+# Config files with secrets (keep example)
+config.yaml
+
+# Session/cookie files
+cookies.txt
+
+# Go build cache
+/vendor/
+
+# Test coverage
+coverage.out
+*.cover
+
+# Logs
+*.log
+

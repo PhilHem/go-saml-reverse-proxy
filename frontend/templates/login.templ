@@ -1,0 +1,287 @@
+package templates
+
+templ authStyles() {
+	<style>
+		* { box-sizing: border-box; margin: 0; padding: 0; }
+		body {
+			font-family: 'JetBrains Mono', 'SF Mono', monospace;
+			background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+			min-height: 100vh;
+			color: #e4e4e4;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 2rem;
+		}
+		.auth-container {
+			width: 100%;
+			max-width: 400px;
+		}
+		h1 {
+			font-size: 2rem;
+			margin-bottom: 2rem;
+			background: linear-gradient(90deg, #e94560, #ff6b6b);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			text-align: center;
+		}
+		.auth-form {
+			background: rgba(255,255,255,0.03);
+			border-radius: 12px;
+			padding: 2rem;
+			border: 1px solid rgba(233, 69, 96, 0.2);
+		}
+		.form-group {
+			margin-bottom: 1.5rem;
+		}
+		label {
+			display: block;
+			margin-bottom: 0.5rem;
+			color: #888;
+			font-size: 0.85rem;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+		input[type="email"],
+		input[type="password"] {
+			width: 100%;
+			padding: 1rem;
+			border: 2px solid rgba(233, 69, 96, 0.3);
+			border-radius: 8px;
+			background: rgba(255,255,255,0.05);
+			color: #fff;
+			font-size: 1rem;
+			font-family: inherit;
+			outline: none;
+			transition: border-color 0.2s;
+		}
+		input:focus {
+			border-color: #e94560;
+		}
+		input::placeholder {
+			color: #555;
+		}
+		.btn-submit {
+			width: 100%;
+			padding: 1rem;
+			border: none;
+			border-radius: 8px;
+			background: linear-gradient(135deg, #e94560, #ff6b6b);
+			color: #fff;
+			font-family: inherit;
+			font-weight: 600;
+			font-size: 1rem;
+			cursor: pointer;
+			transition: transform 0.15s, opacity 0.2s;
+		}
+		.btn-submit:hover:not(:disabled) { transform: scale(1.02); }
+		.btn-submit:active:not(:disabled) { transform: scale(0.98); }
+		.btn-submit:disabled {
+			opacity: 0.6;
+			cursor: not-allowed;
+		}
+		.error-msg {
+			background: rgba(233, 69, 96, 0.15);
+			border: 1px solid #e94560;
+			border-radius: 8px;
+			padding: 0.75rem 1rem;
+			margin-bottom: 1.5rem;
+			color: #ff6b6b;
+			font-size: 0.9rem;
+		}
+		.link-text {
+			text-align: center;
+			margin-top: 1.5rem;
+			color: #666;
+		}
+		.link-text a {
+			color: #e94560;
+			text-decoration: none;
+		}
+		.link-text a:hover {
+			text-decoration: underline;
+		}
+		@keyframes shake {
+			0%, 100% { transform: translateX(0); }
+			25% { transform: translateX(-5px); }
+			75% { transform: translateX(5px); }
+		}
+		.shake { animation: shake 0.3s ease-in-out; }
+	</style>
+}
+
+templ Login(errorMsg string, email string) {
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<title>Login - Todo App</title>
+		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+		@authStyles()
+	</head>
+	<body>
+		<div class="auth-container">
+			<h1>✦ login</h1>
+			<div id="login-form">
+				@LoginForm(errorMsg, email)
+			</div>
+		</div>
+	</body>
+	</html>
+}
+
+templ LoginForm(errorMsg string, email string) {
+	<form 
+		class="auth-form"
+		x-data="{ loading: false, error: '' }"
+		@submit.prevent="
+			loading = true;
+			error = '';
+			fetch('/admin/login', {
+				method: 'POST',
+				body: new FormData($el)
+			})
+			.then(r => {
+				if (r.headers.get('HX-Redirect')) {
+					window.location.href = r.headers.get('HX-Redirect');
+				} else {
+					return r.text();
+				}
+			})
+			.then(html => {
+				if (html) {
+					document.getElementById('login-form').innerHTML = html;
+				}
+			})
+			.catch(() => {
+				error = 'Something went wrong';
+				loading = false;
+			})
+		"
+	>
+		if errorMsg != "" {
+			<div class="error-msg">{ errorMsg }</div>
+		}
+		<template x-if="error">
+			<div class="error-msg" x-text="error"></div>
+		</template>
+		<div class="form-group">
+			<label for="email">Email</label>
+			<input 
+				type="email" 
+				id="email" 
+				name="email" 
+				placeholder="you@example.com" 
+				value={ email }
+				required
+			/>
+		</div>
+		<div class="form-group">
+			<label for="password">Password</label>
+			<input 
+				type="password" 
+				id="password" 
+				name="password" 
+				placeholder="••••••••" 
+				required
+			/>
+		</div>
+		<button type="submit" class="btn-submit" :disabled="loading">
+			<span x-show="!loading">Sign In</span>
+			<span x-show="loading">Signing in...</span>
+		</button>
+		<p class="link-text">
+			Don't have an account? <a href="/admin/register">Register</a>
+		</p>
+	</form>
+}
+
+templ Register(errorMsg string, email string) {
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<title>Register - Todo App</title>
+		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+		@authStyles()
+	</head>
+	<body>
+		<div class="auth-container">
+			<h1>✦ register</h1>
+			<div id="register-form">
+				@RegisterForm(errorMsg, email)
+			</div>
+		</div>
+	</body>
+	</html>
+}
+
+templ RegisterForm(errorMsg string, email string) {
+	<form 
+		class="auth-form"
+		x-data="{ loading: false, error: '' }"
+		@submit.prevent="
+			loading = true;
+			error = '';
+			fetch('/admin/register', {
+				method: 'POST',
+				body: new FormData($el)
+			})
+			.then(r => {
+				if (r.headers.get('HX-Redirect')) {
+					window.location.href = r.headers.get('HX-Redirect');
+				} else {
+					return r.text();
+				}
+			})
+			.then(html => {
+				if (html) {
+					document.getElementById('register-form').innerHTML = html;
+				}
+			})
+			.catch(() => {
+				error = 'Something went wrong';
+				loading = false;
+			})
+		"
+	>
+		if errorMsg != "" {
+			<div class="error-msg">{ errorMsg }</div>
+		}
+		<template x-if="error">
+			<div class="error-msg" x-text="error"></div>
+		</template>
+		<div class="form-group">
+			<label for="email">Email</label>
+			<input 
+				type="email" 
+				id="email" 
+				name="email" 
+				placeholder="you@example.com" 
+				value={ email }
+				required
+			/>
+		</div>
+		<div class="form-group">
+			<label for="password">Password</label>
+			<input 
+				type="password" 
+				id="password" 
+				name="password" 
+				placeholder="••••••••" 
+				minlength="6"
+				required
+			/>
+		</div>
+		<button type="submit" class="btn-submit" :disabled="loading">
+			<span x-show="!loading">Create Account</span>
+			<span x-show="loading">Creating...</span>
+		</button>
+		<p class="link-text">
+			Already have an account? <a href="/admin/login">Sign in</a>
+		</p>
+	</form>
+}
+
