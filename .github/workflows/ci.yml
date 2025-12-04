@@ -61,6 +61,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      REGISTRY_IMAGE: ghcr.io/${{ github.repository_owner }}/go-saml-reverse-proxy
     steps:
       - uses: actions/checkout@v4
 
@@ -78,7 +80,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ${{ env.REGISTRY_IMAGE }}
 
       - name: Build and push by digest
         id: build
@@ -87,7 +89,7 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: type=image,name=ghcr.io/${{ github.repository }},push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
 
@@ -112,6 +114,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      REGISTRY_IMAGE: ghcr.io/${{ github.repository_owner }}/go-saml-reverse-proxy
     steps:
       - name: Download digests
         uses: actions/download-artifact@v4
@@ -134,7 +138,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ${{ env.REGISTRY_IMAGE }}
           tags: |
             type=sha
             type=raw,value=latest
@@ -143,4 +147,4 @@ jobs:
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf 'ghcr.io/${{ github.repository }}@sha256:%s ' *)
+            $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
