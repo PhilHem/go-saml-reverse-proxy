@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"todo-app/backend/config"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/config"
 )
 
 var upstreamURL *url.URL

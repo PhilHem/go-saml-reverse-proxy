@@ -5,17 +5,142 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/xml"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
-	"todo-app/backend/config"
-	"todo-app/backend/database"
-	"todo-app/backend/models"
+	"strings"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/config"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/database"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/models"
 
+	"github.com/crewjam/saml"
 	"github.com/crewjam/saml/samlsp"
 )
 
+// ValidateRedirect checks if a redirect URL is safe (relative or same-origin)
+func ValidateRedirect(redirect string) bool {
+	if redirect == "" {
+		return true
+	}
+
+	// Block protocol-relative URLs
+	if strings.HasPrefix(redirect, "//") {
+		return false
+	}
+
+	// Allow relative paths
+	if strings.HasPrefix(redirect, "/") {
+		return true
+	}
+
+	// Check if absolute URL matches public URL origin
+	parsed, err := url.Parse(redirect)
+	if err != nil {
+		return false
+	}
+
+	publicURL, err := url.Parse(config.C.PublicURL)
+	if err != nil {
+		return false
+	}
+
+	return parsed.Scheme == publicURL.Scheme && parsed.Host == publicURL.Host
+}
+
+// IsEmailDomainAllowed checks if an email's domain is in the allowlist
+func IsEmailDomainAllowed(email string) bool {
+	// Empty allowlist means all domains are allowed
+	if len(config.C.SAML.AllowedDomains) == 0 {
+		return true
+	}
+
+	// Extract domain from email
+	parts := strings.Split(email, "@")
+	if len(parts) != 2 {
+		return false
+	}
+	domain := strings.ToLower(parts[1])
+
+	// Check against allowlist
+	for _, allowed := range config.C.SAML.AllowedDomains {
+		if strings.ToLower(allowed) == domain {
+			return true
+		}
+	}
+	return false
+}
+
 var SamlMiddleware *samlsp.Middleware
+
+// parseIDPMetadata parses SAML metadata XML and optionally filters by entity ID.
+// Supports both single EntityDescriptor and federation EntitiesDescriptor formats.
+func parseIDPMetadata(data []byte, entityID string) (*saml.EntityDescriptor, error) {
+	// Try parsing as single EntityDescriptor first
+	var entity saml.EntityDescriptor
+	if err := xml.Unmarshal(data, &entity); err == nil && entity.EntityID != "" {
+		// Check if entity ID matches (or no filter specified)
+		if entityID == "" || entity.EntityID == entityID {
+			return &entity, nil
+		}
+		return nil, fmt.Errorf("entity ID mismatch: got %s, want %s", entity.EntityID, entityID)
+	}
+
+	// Try parsing as EntitiesDescriptor (federation metadata)
+	var entities saml.EntitiesDescriptor
+	if err := xml.Unmarshal(data, &entities); err != nil {
+		return nil, fmt.Errorf("failed to parse metadata: %w", err)
+	}
+
+	// Find matching entity
+	for i := range entities.EntityDescriptors {
+		e := &entities.EntityDescriptors[i]
+		// Skip non-IDP entities
+		if len(e.IDPSSODescriptors) == 0 {
+			continue
+		}
+		// Return first IDP if no entity ID specified
+		if entityID == "" {
+			return e, nil
+		}
+		// Return matching entity
+		if e.EntityID == entityID {
+			return e, nil
+		}
+	}
+
+	if entityID == "" {
+		return nil, fmt.Errorf("no IDP found in metadata")
+	}
+	return nil, fmt.Errorf("IDP with entity ID %q not found in metadata", entityID)
+}
+
+// fetchIDPMetadata fetches and parses IDP metadata from a URL with optional entity ID filter.
+func fetchIDPMetadata(ctx context.Context, httpClient *http.Client, metadataURL string, entityID string) (*saml.EntityDescriptor, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", metadataURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating request: %w", err)
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fetching metadata: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("fetching metadata: HTTP %d", resp.StatusCode)
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading metadata: %w", err)
+	}
+
+	return parseIDPMetadata(data, entityID)
+}
 
 func InitSAML() error {
 	// Load SP certificate and key
@@ -30,12 +155,14 @@ func InitSAML() error {
 		return err
 	}
 
-	// Fetch IDP metadata
-	idpMetadataURL, _ := url.Parse(config.C.SAML.IDPMetadataURL)
-	idpMetadata, err := samlsp.FetchMetadata(context.Background(), http.DefaultClient, *idpMetadataURL)
+	// Fetch IDP metadata with optional entity ID filter (for federation metadata)
+	idpMetadata, err := fetchIDPMetadata(context.Background(), http.DefaultClient, config.C.SAML.IDPMetadataURL, config.C.SAML.IDPEntityID)
 	if err != nil {
 		slog.Error("SAML init failed: IDP metadata fetch error", "source", "saml", "error", err.Error())
 		return err
+	}
+	if config.C.SAML.IDPEntityID != "" {
+		slog.Info("Using IDP from federation metadata", "source", "saml", "entity_id", idpMetadata.EntityID)
 	}
 
 	// SP root URL - use public URL for SAML (what's exposed via reverse proxy)
@@ -46,7 +173,7 @@ func InitSAML() error {
 		Key:               keyPair.PrivateKey.(*rsa.PrivateKey),
 		Certificate:       keyPair.Leaf,
 		IDPMetadata:       idpMetadata,
-		AllowIDPInitiated: true,
+		AllowIDPInitiated: config.C.SAML.AllowIDPInitiated,
 	})
 	if err != nil {
 		slog.Error("SAML init failed: middleware creation error", "source", "saml", "error", err.Error())
@@ -63,12 +190,14 @@ func SAMLMetadata(w http.ResponseWriter, r *http.Request) {
 
 // SAMLLogin initiates the SAML auth flow
 func SAMLLogin(w http.ResponseWriter, r *http.Request) {
-	// Store redirect URL in session for post-auth redirect
+	// Store redirect URL in session for post-auth redirect (validate first)
 	redirect := r.URL.Query().Get("redirect")
-	if redirect != "" {
+	if redirect != "" && ValidateRedirect(redirect) {
 		session, _ := Store.Get(r, "session")
 		session.Values["saml_redirect"] = redirect
 		session.Save(r, w)
+	} else if redirect != "" {
+		slog.Warn("SAML login rejected invalid redirect", "source", "saml", "redirect", redirect)
 	}
 
 	slog.Info("SAML login initiated", "source", "saml", "redirect", redirect)
@@ -84,11 +213,11 @@ func SAMLACS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Use AllowIDPInitiated mode - pass nil for possibleRequestIDs
+	// Use AllowIDPInitiated mode based on config
 	assertion, err := SamlMiddleware.ServiceProvider.ParseResponse(r, nil)
 	if err != nil {
 		slog.Warn("SAML ACS failed: assertion parse error", "source", "saml", "error", err.Error())
-		http.Error(w, "SAML error: "+err.Error(), http.StatusUnauthorized)
+		http.Error(w, "Authentication failed", http.StatusUnauthorized)
 		return
 	}
 
@@ -110,6 +239,13 @@ func SAMLACS(w http.ResponseWriter, r *http.Request) {
 	if email == "" {
 		slog.Warn("SAML ACS failed: no email in response", "source", "saml")
 		http.Error(w, "No email in SAML response", http.StatusUnauthorized)
+		return
+	}
+
+	// Check if email domain is allowed
+	if !IsEmailDomainAllowed(email) {
+		slog.Warn("SAML ACS failed: email domain not allowed", "source", "saml", "email", email)
+		http.Error(w, "Access denied", http.StatusForbidden)
 		return
 	}
 

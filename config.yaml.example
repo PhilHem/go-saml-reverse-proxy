@@ -3,14 +3,27 @@
 
 listen: ":8080"
 public_url: "https://proxy.example.com"  # URL exposed by Caddy/nginx
+database_path: "app.db"                  # SQLite database path
 
 saml:
   idp_metadata_url: "https://idp.example.com/metadata"
+  idp_entity_id: ""           # Optional: select specific IDP from federation metadata
   sp_cert: "sp-cert.pem"
   sp_key: "sp-key.pem"
+  allow_idp_initiated: false  # Enable IDP-initiated SSO (disabled by default for security)
+  allowed_domains: []         # Email domains allowed for auto-provisioning (empty = all allowed)
 
 session:
   timeout: "24h"  # Session duration (e.g., "1h", "24h", "168h")
+  secret: ""      # REQUIRED: 32+ char secret for session cookies (or use SESSION_SECRET env var)
 
 upstream: "http://backend:3000"
+
+logs:
+  max_db_size: "5GB"  # Max log DB size (supports KB, MB, GB, TB suffixes)
+
+tls:
+  enabled: false  # Enable TLS (disable if behind reverse proxy)
+  cert: ""        # Path to TLS certificate
+  key: ""         # Path to TLS private key
 

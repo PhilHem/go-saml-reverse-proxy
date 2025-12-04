@@ -4,11 +4,14 @@ An authentication gateway that proxies requests to upstream services after SAML 
 
 ## Features
 
-- **SAML Service Provider** - Full SAML 2.0 SP implementation with IDP-initiated SSO support
+- **SAML Service Provider** - Full SAML 2.0 SP implementation
 - **Reverse Proxy** - Forwards SAML-authenticated requests with `X-Forwarded-User` and `X-Forwarded-Email` headers
 - **Separated Authentication** - SAML for proxy access, local email/password for admin dashboard
-- **Auto-provisioning** - Creates users automatically on first SAML login
-- **Session Management** - Cookie-based sessions with configurable timeout
+- **First-User Setup** - Admin registration only available for initial setup (no open registration)
+- **Auto-provisioning** - Creates users automatically on first SAML login (with optional domain allowlist)
+- **Session Management** - Secure cookie-based sessions with configurable timeout
+- **Security Headers** - X-Frame-Options, CSP, X-Content-Type-Options, etc.
+- **Rate Limiting** - Protects login/registration from brute-force attacks
 - **Structured Logging** - Logs to SQLite + stdout with automatic cleanup
 
 ## Configuration
@@ -21,19 +24,74 @@ cp config.yaml.example config.yaml
 
 ### Config Options
 
-| Key                     | Description                       | Default                          |
-| ----------------------- | --------------------------------- | -------------------------------- |
-| `listen`                | Server bind address               | `:8080`                          |
-| `public_url`            | External URL (for SAML callbacks) | `http://localhost:8080`          |
-| `saml.idp_metadata_url` | IDP metadata endpoint             | `http://localhost:7000/metadata` |
-| `saml.sp_cert`          | SP certificate file               | `sp-cert.pem`                    |
-| `saml.sp_key`           | SP private key file               | `sp-key.pem`                     |
-| `session.timeout`       | Session duration                  | `24h`                            |
-| `upstream`              | Backend service URL               | `http://localhost:9000`          |
+| Key                        | Description                           | Default                          |
+| -------------------------- | ------------------------------------- | -------------------------------- |
+| `listen`                   | Server bind address                   | `:8080`                          |
+| `public_url`               | External URL (for SAML callbacks)     | `http://localhost:8080`          |
+| `database_path`            | SQLite database file path             | `app.db`                         |
+| `saml.idp_metadata_url`    | IDP metadata endpoint                 | `http://localhost:7000/metadata` |
+| `saml.idp_entity_id`       | Entity ID for federation metadata     | (none)                           |
+| `saml.sp_cert`             | SP certificate file                   | `sp-cert.pem`                    |
+| `saml.sp_key`              | SP private key file                   | `sp-key.pem`                     |
+| `saml.allow_idp_initiated` | Enable IDP-initiated SSO              | `false`                          |
+| `saml.allowed_domains`     | Email domains for auto-provisioning   | `[]` (all allowed)               |
+| `session.timeout`          | Session duration                      | `24h`                            |
+| `session.secret`           | **REQUIRED** 32+ char session secret  | (none)                           |
+| `upstream`                 | Backend service URL                   | `http://localhost:9000`          |
+| `tls.enabled`              | Enable TLS                            | `false`                          |
+| `tls.cert`                 | TLS certificate path                  | (none)                           |
+| `tls.key`                  | TLS private key path                  | (none)                           |
 
 ### Environment Variables
 
-Override config with: `LISTEN`, `PUBLIC_URL`, `UPSTREAM_URL`, `IDP_METADATA_URL`, `SP_CERT`, `SP_KEY`, `SESSION_TIMEOUT`
+Override config with: `LISTEN`, `PUBLIC_URL`, `DATABASE_PATH`, `UPSTREAM_URL`, `IDP_METADATA_URL`, `IDP_ENTITY_ID`, `SP_CERT`, `SP_KEY`, `SESSION_TIMEOUT`, `SESSION_SECRET`, `TLS_ENABLED`, `TLS_CERT`, `TLS_KEY`
+
+### SAML Configuration
+
+To integrate with a SAML Identity Provider (IDP), you need to exchange metadata:
+
+**1. Get your SP metadata**
+
+Once the proxy is running, your Service Provider metadata is available at:
+
+```
+http://localhost:8080/saml/metadata
+```
+
+Provide this URL (or download the XML) to your IDP administrator when setting up the trust relationship.
+
+**2. Configure the IDP metadata URL**
+
+Set `saml.idp_metadata_url` in your config to point to your IDP's metadata endpoint:
+
+```yaml
+saml:
+  idp_metadata_url: https://your-idp.example.com/metadata
+```
+
+Common IDP metadata URLs:
+- **Okta**: `https://{your-domain}.okta.com/app/{app-id}/sso/saml/metadata`
+- **Azure AD**: `https://login.microsoftonline.com/{tenant-id}/federationmetadata/2007-06/federationmetadata.xml`
+- **Google Workspace**: `https://accounts.google.com/samlrp/metadata?rpid={app-id}`
+- **OneLogin**: `https://{subdomain}.onelogin.com/saml/metadata/{app-id}`
+
+**3. Key SAML endpoints**
+
+| Endpoint | URL | Purpose |
+| -------- | --- | ------- |
+| SP Metadata | `/saml/metadata` | Give this to your IDP |
+| ACS (Assertion Consumer Service) | `/saml/acs` | IDP posts SAML responses here |
+| Login | `/saml/login` | Initiates SP-initiated SSO |
+
+**4. Federation metadata (optional)**
+
+When using federation metadata containing multiple IDPs (e.g., DFN-AAI), specify the entity ID to select a specific IDP:
+
+```yaml
+saml:
+  idp_metadata_url: "http://www.aai.dfn.de/metadata/dfn-aai-local-141-metadata.xml"
+  idp_entity_id: "https://idp.uni-mannheim.de/idp/shibboleth"
+```
 
 ## Run
 
@@ -65,6 +123,16 @@ Server runs at http://localhost:8080
 ```bash
 go test ./...
 ```
+
+### Local SAML Testing
+
+For local development, use the `saml-idp` npm package to run a mock SAML Identity Provider:
+
+```bash
+npx saml-idp --acsUrl http://localhost:8080/saml/acs --audience http://localhost:8080/saml/metadata --port 7000
+```
+
+This starts a mock IDP at http://localhost:7000 with a test login page. The default config already points to this endpoint (`saml.idp_metadata_url: http://localhost:7000/metadata`).
 
 ## Docker
 

@@ -117,7 +117,7 @@ templ Login(errorMsg string, email string) {
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 		<title>Login - Todo App</title>
-		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js" integrity="sha384-6Adm6G1U8xoHlXflGqBJzrK4vAJPKpfQ9yIDDXZn2P76zOJaKLwMZlqRy6nEB3Pw" crossorigin="anonymous"></script>
 		@authStyles()
 	</head>
 	<body>
@@ -204,7 +204,7 @@ templ Register(errorMsg string, email string) {
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 		<title>Register - Todo App</title>
-		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js" integrity="sha384-6Adm6G1U8xoHlXflGqBJzrK4vAJPKpfQ9yIDDXZn2P76zOJaKLwMZlqRy6nEB3Pw" crossorigin="anonymous"></script>
 		@authStyles()
 	</head>
 	<body>
@@ -271,7 +271,8 @@ templ RegisterForm(errorMsg string, email string) {
 				id="password" 
 				name="password" 
 				placeholder="••••••••" 
-				minlength="6"
+				minlength="8"
+				title="Password must be 8+ characters with uppercase, number, and special character"
 				required
 			/>
 		</div>
