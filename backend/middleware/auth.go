@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 	"net/url"
-	"todo-app/backend/handlers"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/handlers"
 )
 
 // RequireLocalAuth requires local username/password authentication (for admin interface)

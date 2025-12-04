@@ -7,8 +7,8 @@ templ Logs() {
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 		<title>Logs - Todo App</title>
-		<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" integrity="sha384-8rGMqGGIc3SfpJeJnjRjdrhYvZWqK7XRNH2QLfPSP5TZEz2XFYPyxrSG/OWUPYQO" crossorigin="anonymous"></script>
+		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js" integrity="sha384-6Adm6G1U8xoHlXflGqBJzrK4vAJPKpfQ9yIDDXZn2P76zOJaKLwMZlqRy6nEB3Pw" crossorigin="anonymous"></script>
 		<style>
 			* { box-sizing: border-box; margin: 0; padding: 0; }
 			body {
@@ -66,16 +66,23 @@ templ Logs() {
 				letter-spacing: 0.05em;
 			}
 			select, input[type="text"] {
-				padding: 0.75rem 1rem;
+				-webkit-appearance: none;
+				-moz-appearance: none;
+				appearance: none;
+				padding: 0.75rem 2.2rem 0.75rem 1rem;
 				border: 2px solid #2d4059;
 				border-radius: 8px;
-				background: rgba(255,255,255,0.05);
+				background: rgba(255,255,255,0.05) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L2 4h8z'/%3E%3C/svg%3E") no-repeat right 0.75rem center;
 				color: #fff;
 				font-size: 0.9rem;
 				font-family: inherit;
 				outline: none;
 				transition: border-color 0.2s;
 				min-width: 150px;
+			}
+			input[type="text"] {
+				background-image: none;
+				padding-right: 1rem;
 			}
 			select:focus, input[type="text"]:focus {
 				border-color: #e94560;
@@ -244,22 +251,71 @@ templ Logs() {
 				text-transform: uppercase;
 				letter-spacing: 0.05em;
 			}
-			.interval-select {
-				padding: 0.4rem 0.8rem;
+			#timelineChart {
+				max-height: 200px;
+			}
+			.time-controls {
+				display: flex;
+				gap: 0.5rem;
+			}
+			.time-select {
+				-webkit-appearance: none;
+				-moz-appearance: none;
+				appearance: none;
+				padding: 0.4rem 1.8rem 0.4rem 0.6rem;
 				border: 1px solid #2d4059;
-				border-radius: 6px;
-				background: rgba(255,255,255,0.05);
+				border-radius: 4px;
+				background: rgba(255,255,255,0.05) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L2 4h8z'/%3E%3C/svg%3E") no-repeat right 0.5rem center;
 				color: #fff;
-				font-size: 0.8rem;
+				font-size: 0.75rem;
 				font-family: inherit;
 				cursor: pointer;
 			}
-			.interval-select:focus {
+			.time-select:focus {
 				border-color: #e94560;
 				outline: none;
 			}
-			#timelineChart {
-				max-height: 200px;
+			.charts-row {
+				display: flex;
+				gap: 1.5rem;
+				margin-bottom: 1.5rem;
+			}
+			.chart-timeline {
+				flex: 1;
+				margin-bottom: 0;
+			}
+			.chart-db {
+				width: 180px;
+				flex-shrink: 0;
+				margin-bottom: 0;
+			}
+			.db-gauge-wrapper {
+				position: relative;
+				width: 140px;
+				height: 140px;
+				margin: 0 auto;
+			}
+			#dbStatsChart {
+				width: 140px !important;
+				height: 140px !important;
+			}
+			.db-gauge-label {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				text-align: center;
+			}
+			.db-gauge-value {
+				display: block;
+				font-size: 1.1rem;
+				font-weight: 600;
+				color: #e94560;
+			}
+			.db-gauge-total {
+				display: block;
+				font-size: 0.7rem;
+				color: #666;
 			}
 			.bulk-actions {
 				display: flex;
@@ -340,16 +396,43 @@ templ Logs() {
 				</div>
 			</div>
 
-			<div class="chart-container">
-				<div class="chart-header">
-					<span class="chart-title">Log Events Over Time</span>
-					<select class="interval-select" x-model="timelineInterval" @change="fetchTimeline()">
-						<option value="minute">Per Minute</option>
-						<option value="hour">Per Hour</option>
-						<option value="day">Per Day</option>
-					</select>
+			<div class="charts-row">
+				<div class="chart-container chart-timeline">
+					<div class="chart-header">
+						<span class="chart-title">Log Events</span>
+						<div class="time-controls">
+							<select class="time-select" x-model="timeRange" @change="fetchTimeline()">
+								<option value="1h">Last 1h</option>
+								<option value="6h">Last 6h</option>
+								<option value="24h">Last 24h</option>
+								<option value="7d">Last 7d</option>
+								<option value="30d">Last 30d</option>
+							</select>
+							<select class="time-select" x-model="resolution" @change="fetchTimeline()">
+								<option value="auto">Auto</option>
+								<option value="1m">1m</option>
+								<option value="5m">5m</option>
+								<option value="15m">15m</option>
+								<option value="1h">1h</option>
+								<option value="1d">1d</option>
+							</select>
+						</div>
+					</div>
+					<canvas id="timelineChart"></canvas>
 				</div>
-				<canvas id="timelineChart"></canvas>
+
+				<div class="chart-container chart-db">
+					<div class="chart-header">
+						<span class="chart-title">DB Size</span>
+					</div>
+					<div class="db-gauge-wrapper">
+						<canvas id="dbStatsChart"></canvas>
+						<div class="db-gauge-label">
+							<span class="db-gauge-value" x-text="formatBytes(dbStats.used_size_bytes)"></span>
+							<span class="db-gauge-total" x-text="'/ ' + formatBytes(dbStats.max_size_bytes)"></span>
+						</div>
+					</div>
+				</div>
 			</div>
 
 			<div class="filters">
@@ -472,8 +555,11 @@ templ Logs() {
 						source: '',
 						search: ''
 					},
-					timelineInterval: 'hour',
 					timelineChart: null,
+					timeRange: '24h',
+					resolution: 'auto',
+					dbStatsChart: null,
+					dbStats: { used_size_bytes: 0, max_size_bytes: 0 },
 					selectedIds: [],
 
 					get totalPages() {
@@ -531,11 +617,70 @@ templ Logs() {
 						await this.fetchSources();
 						await this.fetchLogs();
 						await this.fetchTimeline();
+						await this.fetchDBStats();
+					},
+
+					async fetchDBStats() {
+						try {
+							const res = await fetch('/admin/api/db/stats');
+							this.dbStats = await res.json();
+							this.renderDBChart();
+						} catch (e) {
+							console.error('Failed to fetch DB stats:', e);
+						}
+					},
+
+					renderDBChart() {
+						const ctx = document.getElementById('dbStatsChart').getContext('2d');
+						
+						if (this.dbStatsChart) {
+							this.dbStatsChart.destroy();
+						}
+
+						const used = this.dbStats.used_size_bytes;
+						const max = this.dbStats.max_size_bytes;
+						const remaining = Math.max(0, max - used);
+
+						this.dbStatsChart = new Chart(ctx, {
+							type: 'doughnut',
+							data: {
+								labels: ['Used', 'Available'],
+								datasets: [{
+									data: [used, remaining],
+									backgroundColor: ['#e94560', 'rgba(255,255,255,0.08)'],
+									borderWidth: 0
+								}]
+							},
+							options: {
+								responsive: false,
+								cutout: '70%',
+								plugins: {
+									legend: { display: false },
+									tooltip: {
+										callbacks: {
+											label: (ctx) => ctx.label + ': ' + this.formatBytes(ctx.raw)
+										}
+									}
+								}
+							}
+						});
+					},
+
+					formatBytes(bytes) {
+						if (bytes === 0) return '0 B';
+						const k = 1024;
+						const sizes = ['B', 'KB', 'MB', 'GB'];
+						const i = Math.floor(Math.log(bytes) / Math.log(k));
+						return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 					},
 
 					async fetchTimeline() {
 						try {
-							const res = await fetch('/admin/api/logs/timeline?interval=' + this.timelineInterval);
+							const params = new URLSearchParams({
+								range: this.timeRange,
+								resolution: this.resolution
+							});
+							const res = await fetch('/admin/api/logs/timeline?' + params);
 							const data = await res.json();
 							this.renderChart(data);
 						} catch (e) {
@@ -550,35 +695,38 @@ templ Logs() {
 							this.timelineChart.destroy();
 						}
 
-						const labels = data.map(d => this.formatChartLabel(d.time));
+						const labels = data.map(d => this.formatTimeLabel(d.time));
 						const counts = data.map(d => d.count);
 
 						this.timelineChart = new Chart(ctx, {
-							type: 'line',
+							type: 'bar',
 							data: {
 								labels: labels,
 								datasets: [{
 									label: 'Log Events',
 									data: counts,
-									borderColor: '#e94560',
-									backgroundColor: 'rgba(233, 69, 96, 0.1)',
-									borderWidth: 2,
-									fill: true,
-									tension: 0.3,
-									pointRadius: 3,
-									pointBackgroundColor: '#e94560'
+									backgroundColor: 'rgba(233, 69, 96, 0.8)',
+									borderRadius: 2,
+									barPercentage: 0.9,
+									categoryPercentage: 0.95
 								}]
 							},
 							options: {
 								responsive: true,
 								maintainAspectRatio: false,
 								plugins: {
-									legend: { display: false }
+									legend: { display: false },
+									tooltip: {
+										callbacks: {
+											title: (items) => data[items[0].dataIndex]?.time || '',
+											label: (ctx) => ctx.raw + ' events'
+										}
+									}
 								},
 								scales: {
 									x: {
-										grid: { color: 'rgba(255,255,255,0.05)' },
-										ticks: { color: '#666', maxTicksLimit: 12 }
+										grid: { display: false },
+										ticks: { color: '#666', maxTicksLimit: 12, maxRotation: 0 }
 									},
 									y: {
 										beginAtZero: true,
@@ -590,13 +738,11 @@ templ Logs() {
 						});
 					},
 
-					formatChartLabel(time) {
-						if (this.timelineInterval === 'day') {
-							return time.slice(5); // MM-DD
-						} else if (this.timelineInterval === 'hour') {
-							return time.slice(5, 13); // MM-DD HH
+					formatTimeLabel(time) {
+						if (this.timeRange === '7d' || this.timeRange === '30d') {
+							return time.slice(5, 10); // MM-DD
 						}
-						return time.slice(11); // HH:MM
+						return time.slice(11, 16); // HH:MM
 					},
 
 					async fetchSources() {

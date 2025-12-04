@@ -14,7 +14,7 @@ Thumbs.db
 *.db
 
 # Compiled binaries
-todo-app
+saml-proxy
 /go-saml-reverse-proxy
 
 # Private keys and certificates
@@ -36,4 +36,6 @@ coverage.out
 
 # Logs
 *.log
+
+
 

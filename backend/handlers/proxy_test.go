@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"todo-app/backend/config"
-	"todo-app/backend/models"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/config"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/models"
 )
 
 // Test 1: Proxy blocks unauthenticated requests

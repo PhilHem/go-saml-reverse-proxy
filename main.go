@@ -6,12 +6,15 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
-	"todo-app/backend/config"
-	"todo-app/backend/database"
-	"todo-app/backend/handlers"
-	"todo-app/backend/logger"
-	"todo-app/backend/middleware"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/config"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/database"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/handlers"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/logger"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/middleware"
 )
+
+// Rate limiter for auth endpoints (10 requests per minute)
+var authRateLimiter = middleware.NewRateLimiter(10, time.Minute)
 
 func main() {
 	// Load configuration
@@ -19,8 +22,10 @@ func main() {
 		log.Fatal("Failed to load config:", err)
 	}
 
-	// Initialize session store with configured timeout
-	handlers.InitSession()
+	// Initialize session store with configured secret and timeout
+	if err := handlers.InitSession(); err != nil {
+		log.Fatal("Failed to init session:", err)
+	}
 
 	if err := database.Init(); err != nil {
 		log.Fatal("Failed to init database:", err)
@@ -56,11 +61,11 @@ func main() {
 	mux.HandleFunc("GET /saml/login", handlers.SAMLLogin)
 	mux.HandleFunc("GET /saml/logout", handlers.SAMLLogout)
 
-	// Admin auth routes (public)
+	// Admin auth routes (public, rate limited)
 	mux.HandleFunc("GET /admin/login", handlers.LoginPage)
-	mux.HandleFunc("POST /admin/login", handlers.Login)
+	mux.HandleFunc("POST /admin/login", authRateLimiter.LimitFunc(handlers.Login))
 	mux.HandleFunc("GET /admin/register", handlers.RegisterPage)
-	mux.HandleFunc("POST /admin/register", handlers.Register)
+	mux.HandleFunc("POST /admin/register", authRateLimiter.LimitFunc(handlers.Register))
 	mux.HandleFunc("POST /admin/logout", handlers.Logout)
 
 	// Admin root redirects to logs
@@ -76,11 +81,20 @@ func main() {
 	mux.HandleFunc("GET /admin/api/logs", middleware.RequireLocalAuth(handlers.GetLogs))
 	mux.HandleFunc("GET /admin/api/logs/sources", middleware.RequireLocalAuth(handlers.GetLogSources))
 	mux.HandleFunc("GET /admin/api/logs/timeline", middleware.RequireLocalAuth(handlers.GetLogTimeline))
+	mux.HandleFunc("GET /admin/api/db/stats", middleware.RequireLocalAuth(handlers.GetDBStats))
 	mux.HandleFunc("DELETE /admin/api/logs", middleware.RequireLocalAuth(handlers.DeleteLogs))
 
 	// Reverse proxy - all other routes forward to upstream (require SAML auth)
 	mux.HandleFunc("/", middleware.RequireProxyAuth(handlers.Proxy))
 
+	// Wrap all routes with security headers
+	handler := middleware.SecurityHeaders(mux)
+
 	fmt.Printf("Server running at %s (public: %s)\n", config.C.Listen, config.C.PublicURL)
-	log.Fatal(http.ListenAndServe(config.C.Listen, mux))
+	if config.C.TLS.Enabled {
+		slog.Info("starting server with TLS", "source", "main")
+		log.Fatal(http.ListenAndServeTLS(config.C.Listen, config.C.TLS.Cert, config.C.TLS.Key, handler))
+	} else {
+		log.Fatal(http.ListenAndServe(config.C.Listen, handler))
+	}
 }

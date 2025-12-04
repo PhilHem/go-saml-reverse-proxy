@@ -8,3 +8,5 @@ type User struct {
 	Password string `json:"-"` // hashed, never serialize
 }
 
+
+

@@ -1,4 +1,4 @@
-module todo-app
+module github.com/PhilHem/go-saml-reverse-proxy
 
 go 1.24.2
 

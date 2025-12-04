@@ -6,7 +6,8 @@ import (
 	"log/slog"
 	"os"
 	"time"
-	"todo-app/backend/models"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/config"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/models"
 
 	"gorm.io/gorm"
 )
@@ -113,12 +114,51 @@ func (h *DBHandler) WithGroup(name string) slog.Handler {
 	return h
 }
 
-// CleanupOldLogs removes logs older than the specified duration
+// CleanupOldLogs removes logs older than the specified duration and enforces max DB size
 func CleanupOldLogs(db *gorm.DB, maxAge time.Duration) {
 	ticker := time.NewTicker(1 * time.Hour)
 	for range ticker.C {
+		// Delete by age
 		cutoff := time.Now().Add(-maxAge)
 		db.Where("created_at < ?", cutoff).Delete(&models.LogEntry{})
+
+		// Enforce max DB size
+		enforceMaxDBSize(db)
+	}
+}
+
+func enforceMaxDBSize(db *gorm.DB) {
+	maxSize := config.C.Logs.MaxDBSize
+	if maxSize <= 0 {
+		return
+	}
+
+	var pageCount, pageSize, freelistCount int64
+	db.Raw("PRAGMA page_count").Scan(&pageCount)
+	db.Raw("PRAGMA page_size").Scan(&pageSize)
+	db.Raw("PRAGMA freelist_count").Scan(&freelistCount)
+
+	usedSize := (pageCount - freelistCount) * pageSize
+
+	// Delete oldest 10% of logs if over limit
+	if usedSize > maxSize {
+		var count int64
+		db.Model(&models.LogEntry{}).Count(&count)
+		deleteCount := count / 10
+		if deleteCount < 100 {
+			deleteCount = 100
+		}
+
+		var oldestIDs []uint
+		db.Model(&models.LogEntry{}).
+			Order("created_at ASC").
+			Limit(int(deleteCount)).
+			Pluck("id", &oldestIDs)
+
+		if len(oldestIDs) > 0 {
+			db.Delete(&models.LogEntry{}, oldestIDs)
+			db.Exec("VACUUM")
+		}
 	}
 }
 

@@ -1,27 +1,90 @@
 package handlers
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
-	"todo-app/backend/config"
-	"todo-app/backend/database"
-	"todo-app/backend/models"
-	"todo-app/frontend/templates"
+	"regexp"
+	"strings"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/config"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/database"
+	"github.com/PhilHem/go-saml-reverse-proxy/backend/models"
+	"github.com/PhilHem/go-saml-reverse-proxy/frontend/templates"
+	"unicode"
 
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var Store = sessions.NewCookieStore([]byte("super-secret-key-change-in-prod"))
+// Email validation regex
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 
-// InitSession configures the session store with timeout from config
-func InitSession() {
+// ValidateEmail checks if email format is valid
+func ValidateEmail(email string) bool {
+	if email == "" {
+		return false
+	}
+	return emailRegex.MatchString(email)
+}
+
+// IsRegistrationAllowed returns true only if no admin users exist (first-user setup)
+func IsRegistrationAllowed() bool {
+	var count int64
+	database.DB.Model(&models.User{}).Count(&count)
+	return count == 0
+}
+
+var Store *sessions.CookieStore
+
+// InitSession configures the session store with secret and timeout from config
+func InitSession() error {
+	if config.C.Session.Secret == "" {
+		return errors.New("session secret is required")
+	}
+	if len(config.C.Session.Secret) < 32 {
+		return errors.New("session secret must be at least 32 characters")
+	}
+
+	Store = sessions.NewCookieStore([]byte(config.C.Session.Secret))
 	Store.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   int(config.C.Session.Timeout.Seconds()),
 		HttpOnly: true,
+		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	}
+	return nil
+}
+
+// ValidatePassword checks password strength requirements
+func ValidatePassword(password string) error {
+	if len(password) < 8 {
+		return errors.New("password must be at least 8 characters")
+	}
+
+	var hasUpper, hasNumber, hasSpecial bool
+	for _, c := range password {
+		switch {
+		case unicode.IsUpper(c):
+			hasUpper = true
+		case unicode.IsNumber(c):
+			hasNumber = true
+		case strings.ContainsRune("!@#$%^&*()_+-=[]{}|;':\",./<>?", c):
+			hasSpecial = true
+		}
+	}
+
+	if !hasUpper {
+		return errors.New("password must contain at least one uppercase letter")
+	}
+	if !hasNumber {
+		return errors.New("password must contain at least one number")
+	}
+	if !hasSpecial {
+		return errors.New("password must contain at least one special character")
+	}
+
+	return nil
 }
 
 func LoginPage(w http.ResponseWriter, r *http.Request) {
@@ -29,6 +92,10 @@ func LoginPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func RegisterPage(w http.ResponseWriter, r *http.Request) {
+	if !IsRegistrationAllowed() {
+		http.Redirect(w, r, "/admin/login", http.StatusSeeOther)
+		return
+	}
 	templates.Register("", "").Render(r.Context(), w)
 }
 
@@ -62,12 +129,26 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
+	// Check if registration is allowed (first-user setup only)
+	if !IsRegistrationAllowed() {
+		slog.Warn("registration blocked: admin user already exists", "source", "auth")
+		http.Error(w, "Registration is disabled", http.StatusForbidden)
+		return
+	}
+
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 
-	if len(password) < 6 {
-		slog.Warn("registration failed: password too short", "source", "auth", "email", email)
-		templates.RegisterForm("Password must be at least 6 characters", email).Render(r.Context(), w)
+	// Validate email format
+	if !ValidateEmail(email) {
+		slog.Warn("registration failed: invalid email format", "source", "auth", "email", email)
+		templates.RegisterForm("Invalid email format", email).Render(r.Context(), w)
+		return
+	}
+
+	if err := ValidatePassword(password); err != nil {
+		slog.Warn("registration failed: weak password", "source", "auth", "email", email, "reason", err.Error())
+		templates.RegisterForm(err.Error(), email).Render(r.Context(), w)
 		return
 	}
 

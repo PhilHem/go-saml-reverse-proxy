@@ -1,7 +1,9 @@
-todos.db
-todo-app
+*.db
+saml-proxy
 *.exe
 .git
 .gitignore
 README.md
+
+
 
