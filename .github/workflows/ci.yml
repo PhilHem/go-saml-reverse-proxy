@@ -61,10 +61,11 @@ jobs:
     permissions:
       contents: read
       packages: write
-    env:
-      REGISTRY_IMAGE: ghcr.io/${{ github.repository_owner }}/go-saml-reverse-proxy
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set registry image name
+        run: echo "REGISTRY_IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -114,9 +115,10 @@ jobs:
     permissions:
       contents: read
       packages: write
-    env:
-      REGISTRY_IMAGE: ghcr.io/${{ github.repository_owner }}/go-saml-reverse-proxy
     steps:
+      - name: Set registry image name
+        run: echo "REGISTRY_IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
       - name: Download digests
         uses: actions/download-artifact@v4
         with:
