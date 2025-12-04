@@ -15,6 +15,7 @@ Thumbs.db
 
 # Compiled binaries
 saml-proxy
+todo-app
 /go-saml-reverse-proxy
 
 # Private keys and certificates
