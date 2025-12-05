@@ -8,7 +8,7 @@ templ Logs() {
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 		<title>Logs - Todo App</title>
 		<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" integrity="sha384-8rGMqGGIc3SfpJeJnjRjdrhYvZWqK7XRNH2QLfPSP5TZEz2XFYPyxrSG/OWUPYQO" crossorigin="anonymous"></script>
-		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js" integrity="sha384-6Adm6G1U8xoHlXflGqBJzrK4vAJPKpfQ9yIDDXZn2P76zOJaKLwMZlqRy6nEB3Pw" crossorigin="anonymous"></script>
+		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js" integrity="sha384-iZD2X8o1Zdq0HR5H/7oa8W30WS4No+zWCKUPD7fHRay9I1Gf+C4F8sVmw7zec1wW" crossorigin="anonymous"></script>
 		<style>
 			* { box-sizing: border-box; margin: 0; padding: 0; }
 			body {
@@ -376,9 +376,12 @@ templ Logs() {
 		<div class="container" x-data="logsApp()">
 			<div class="header">
 				<h1>✦ logs</h1>
-				<form action="/admin/logout" method="POST" style="margin: 0;">
-					<button type="submit" class="nav-link" style="background: transparent; cursor: pointer;">Logout</button>
-				</form>
+				<div style="display: flex; gap: 0.5rem;">
+					<a href="/admin/2fa/setup" class="nav-link">2FA Setup</a>
+					<form action="/admin/logout" method="POST" style="margin: 0;">
+						<button type="submit" class="nav-link" style="background: transparent; cursor: pointer;">Logout</button>
+					</form>
+				</div>
 			</div>
 
 			<div class="stats">

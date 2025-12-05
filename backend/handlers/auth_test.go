@@ -75,7 +75,7 @@ func TestInitSession_FailsOnWeakSecret(t *testing.T) {
 	}
 }
 
-// RED: Test that Secure cookie flag is enabled
+// RED: Test that Secure cookie flag matches TLS config
 func TestInitSession_SecureCookieFlag(t *testing.T) {
 	os.Setenv("SESSION_SECRET", "test-secret-key-32-chars-long!!!")
 	defer os.Unsetenv("SESSION_SECRET")
@@ -88,8 +88,9 @@ func TestInitSession_SecureCookieFlag(t *testing.T) {
 		t.Fatalf("InitSession failed: %v", err)
 	}
 
-	if Store.Options.Secure != true {
-		t.Error("Session cookie should have Secure flag enabled")
+	// Secure flag should match TLS enabled setting
+	if Store.Options.Secure != config.C.TLS.Enabled {
+		t.Errorf("Session cookie Secure flag should match TLS.Enabled (got %v, expected %v)", Store.Options.Secure, config.C.TLS.Enabled)
 	}
 }
 

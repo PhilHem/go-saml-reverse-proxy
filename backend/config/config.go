@@ -59,14 +59,15 @@ func ParseSize(s string) (int64, error) {
 }
 
 type Config struct {
-	Listen       string        `yaml:"listen"`
-	PublicURL    string        `yaml:"public_url"`
-	DatabasePath string        `yaml:"database_path"`
-	SAML         SAMLConfig    `yaml:"saml"`
-	Session      SessionConfig `yaml:"session"`
-	Upstream     string        `yaml:"upstream"`
-	Logs         LogsConfig    `yaml:"logs"`
-	TLS          TLSConfig     `yaml:"tls"`
+	Listen             string        `yaml:"listen"`
+	PublicURL          string        `yaml:"public_url"`
+	DatabasePath       string        `yaml:"database_path"`
+	SAML               SAMLConfig    `yaml:"saml"`
+	Session            SessionConfig `yaml:"session"`
+	Upstream           string        `yaml:"upstream"`
+	UpstreamSkipVerify bool          `yaml:"upstream_skip_verify"` // Skip TLS certificate verification for upstream
+	Logs               LogsConfig    `yaml:"logs"`
+	TLS                TLSConfig     `yaml:"tls"`
 }
 
 type TLSConfig struct {
@@ -176,6 +177,9 @@ func Load() error {
 	}
 	if v := os.Getenv("DATABASE_PATH"); v != "" {
 		C.DatabasePath = v
+	}
+	if v := os.Getenv("UPSTREAM_SKIP_VERIFY"); v == "true" {
+		C.UpstreamSkipVerify = true
 	}
 
 	return nil

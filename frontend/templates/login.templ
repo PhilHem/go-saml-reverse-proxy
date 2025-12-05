@@ -110,28 +110,28 @@ templ authStyles() {
 	</style>
 }
 
-templ Login(errorMsg string, email string) {
+templ Login(errorMsg string, email string, showRegister bool) {
 	<!DOCTYPE html>
 	<html lang="en">
 	<head>
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 		<title>Login - Todo App</title>
-		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js" integrity="sha384-6Adm6G1U8xoHlXflGqBJzrK4vAJPKpfQ9yIDDXZn2P76zOJaKLwMZlqRy6nEB3Pw" crossorigin="anonymous"></script>
+		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js" integrity="sha384-iZD2X8o1Zdq0HR5H/7oa8W30WS4No+zWCKUPD7fHRay9I1Gf+C4F8sVmw7zec1wW" crossorigin="anonymous"></script>
 		@authStyles()
 	</head>
 	<body>
 		<div class="auth-container">
 			<h1>✦ login</h1>
 			<div id="login-form">
-				@LoginForm(errorMsg, email)
+				@LoginForm(errorMsg, email, showRegister)
 			</div>
 		</div>
 	</body>
 	</html>
 }
 
-templ LoginForm(errorMsg string, email string) {
+templ LoginForm(errorMsg string, email string, showRegister bool) {
 	<form 
 		class="auth-form"
 		x-data="{ loading: false, error: '' }"
@@ -191,9 +191,11 @@ templ LoginForm(errorMsg string, email string) {
 			<span x-show="!loading">Sign In</span>
 			<span x-show="loading">Signing in...</span>
 		</button>
-		<p class="link-text">
-			Don't have an account? <a href="/admin/register">Register</a>
-		</p>
+		if showRegister {
+			<p class="link-text">
+				Don't have an account? <a href="/admin/register">Register</a>
+			</p>
+		}
 	</form>
 }
 
@@ -204,7 +206,7 @@ templ Register(errorMsg string, email string) {
 		<meta charset="UTF-8"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 		<title>Register - Todo App</title>
-		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js" integrity="sha384-6Adm6G1U8xoHlXflGqBJzrK4vAJPKpfQ9yIDDXZn2P76zOJaKLwMZlqRy6nEB3Pw" crossorigin="anonymous"></script>
+		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js" integrity="sha384-iZD2X8o1Zdq0HR5H/7oa8W30WS4No+zWCKUPD7fHRay9I1Gf+C4F8sVmw7zec1wW" crossorigin="anonymous"></script>
 		@authStyles()
 	</head>
 	<body>

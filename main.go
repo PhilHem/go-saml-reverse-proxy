@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
 	"github.com/PhilHem/go-saml-reverse-proxy/backend/config"
 	"github.com/PhilHem/go-saml-reverse-proxy/backend/database"
 	"github.com/PhilHem/go-saml-reverse-proxy/backend/handlers"
@@ -68,6 +69,10 @@ func main() {
 	mux.HandleFunc("POST /admin/register", authRateLimiter.LimitFunc(handlers.Register))
 	mux.HandleFunc("POST /admin/logout", handlers.Logout)
 
+	// 2FA verification routes (during login, rate limited)
+	mux.HandleFunc("GET /admin/2fa/verify", handlers.MFAVerifyPage)
+	mux.HandleFunc("POST /admin/2fa/verify", authRateLimiter.LimitFunc(handlers.MFAVerify))
+
 	// Admin root redirects to logs
 	mux.HandleFunc("GET /admin/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/logs", http.StatusSeeOther)
@@ -75,6 +80,11 @@ func main() {
 	mux.HandleFunc("GET /admin", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/logs", http.StatusSeeOther)
 	})
+
+	// 2FA setup routes (require local auth)
+	mux.HandleFunc("GET /admin/2fa/setup", middleware.RequireLocalAuth(handlers.MFASetupPage))
+	mux.HandleFunc("POST /admin/2fa/enable", middleware.RequireLocalAuth(handlers.MFAEnable))
+	mux.HandleFunc("POST /admin/2fa/disable", middleware.RequireLocalAuth(handlers.MFADisable))
 
 	// Admin logs routes (require local username/password auth)
 	mux.HandleFunc("GET /admin/logs", middleware.RequireLocalAuth(handlers.LogsPage))

@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"unicode"
+
 	"github.com/PhilHem/go-saml-reverse-proxy/backend/config"
 	"github.com/PhilHem/go-saml-reverse-proxy/backend/database"
 	"github.com/PhilHem/go-saml-reverse-proxy/backend/models"
 	"github.com/PhilHem/go-saml-reverse-proxy/frontend/templates"
-	"unicode"
 
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
@@ -50,7 +51,7 @@ func InitSession() error {
 		Path:     "/",
 		MaxAge:   int(config.C.Session.Timeout.Seconds()),
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   config.C.TLS.Enabled, // Only require HTTPS when TLS is enabled
 		SameSite: http.SameSiteLaxMode,
 	}
 	return nil
@@ -88,7 +89,11 @@ func ValidatePassword(password string) error {
 }
 
 func LoginPage(w http.ResponseWriter, r *http.Request) {
-	templates.Login("", "").Render(r.Context(), w)
+	if IsRegistrationAllowed() {
+		http.Redirect(w, r, "/admin/register", http.StatusSeeOther)
+		return
+	}
+	templates.Login("", "", false).Render(r.Context(), w)
 }
 
 func RegisterPage(w http.ResponseWriter, r *http.Request) {
@@ -106,17 +111,33 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := database.DB.Where("email = ?", email).First(&user).Error; err != nil {
 		slog.Warn("login failed: user not found", "source", "auth", "email", email)
-		templates.LoginForm("Invalid email or password", email).Render(r.Context(), w)
+		templates.LoginForm("Invalid email or password", email, false).Render(r.Context(), w)
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		slog.Warn("login failed: invalid password", "source", "auth", "email", email)
-		templates.LoginForm("Invalid email or password", email).Render(r.Context(), w)
+		templates.LoginForm("Invalid email or password", email, false).Render(r.Context(), w)
 		return
 	}
 
 	session, _ := Store.Get(r, "session")
+
+	// Check if MFA is enabled for this user
+	if user.MFAEnabled {
+		// Set pending MFA session state
+		session.Values["user_id_pending_mfa"] = user.ID
+		session.Values["email"] = user.Email
+		session.Save(r, w)
+
+		slog.Info("login requires MFA verification", "source", "auth", "user_id", user.ID, "email", email)
+
+		w.Header().Set("HX-Redirect", "/admin/2fa/verify")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// No MFA - complete login normally
 	session.Values["user_id"] = user.ID
 	session.Values["email"] = user.Email
 	session.Values["auth_method"] = "local"

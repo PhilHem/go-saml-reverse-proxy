@@ -1,14 +1,17 @@
 package handlers
 
 import (
+	"crypto/tls"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+
 	"github.com/PhilHem/go-saml-reverse-proxy/backend/config"
 )
 
 var upstreamURL *url.URL
+var upstreamTransport http.RoundTripper
 
 func InitProxy() error {
 	var err error
@@ -16,6 +19,14 @@ func InitProxy() error {
 	if err != nil {
 		slog.Error("proxy init failed: invalid upstream URL", "source", "proxy", "error", err.Error())
 		return err
+	}
+
+	// Configure transport with optional TLS skip verify
+	if config.C.UpstreamSkipVerify {
+		upstreamTransport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		slog.Warn("proxy TLS verification disabled for upstream", "source", "proxy")
 	}
 
 	slog.Info("proxy initialized", "source", "proxy", "upstream", config.C.Upstream)
@@ -55,6 +66,7 @@ func Proxy(w http.ResponseWriter, r *http.Request) {
 				"upstream", upstreamURL.Host,
 			)
 		},
+		Transport: upstreamTransport,
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
 			slog.Error("proxy error", "source", "proxy", "error", err.Error())
 			http.Error(w, "Upstream unavailable", http.StatusBadGateway)

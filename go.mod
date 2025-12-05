@@ -12,6 +12,7 @@ require (
 
 require (
 	github.com/beevik/etree v1.5.0 // indirect
+	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/crewjam/saml v0.5.1 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
@@ -20,6 +21,7 @@ require (
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/mattermost/xml-roundtrip-validator v0.1.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
+	github.com/pquerna/otp v1.5.0 // indirect
 	github.com/russellhaering/goxmldsig v1.4.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

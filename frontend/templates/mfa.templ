@@ -1,0 +1,266 @@
+package templates
+
+templ MFASetup(qrCode string, secret string, mfaEnabled bool, errorMsg string) {
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<title>2FA Setup - SAML Proxy</title>
+		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js" integrity="sha384-iZD2X8o1Zdq0HR5H/7oa8W30WS4No+zWCKUPD7fHRay9I1Gf+C4F8sVmw7zec1wW" crossorigin="anonymous"></script>
+		@authStyles()
+		@mfaStyles()
+	</head>
+	<body>
+		<div class="auth-container">
+			<h1>2FA Setup</h1>
+			<div id="mfa-setup-form">
+				@MFASetupForm(qrCode, secret, mfaEnabled, errorMsg)
+			</div>
+			<p class="link-text">
+				<a href="/admin/logs">Back to Dashboard</a>
+			</p>
+		</div>
+	</body>
+	</html>
+}
+
+templ MFASetupForm(qrCode string, secret string, mfaEnabled bool, errorMsg string) {
+	<div class="auth-form">
+		if errorMsg != "" {
+			<div class="error-msg">{ errorMsg }</div>
+		}
+		if mfaEnabled {
+			<div class="success-msg">2FA is currently enabled</div>
+			<p class="mfa-info">To disable 2FA, enter a code from your authenticator app:</p>
+			<form
+				x-data="{ loading: false }"
+				@submit.prevent="
+					loading = true;
+					fetch('/admin/2fa/disable', {
+						method: 'POST',
+						body: new FormData($el)
+					})
+					.then(r => r.text())
+					.then(html => {
+						document.getElementById('mfa-setup-form').innerHTML = html;
+					})
+					.catch(() => { loading = false; })
+				"
+			>
+				<div class="form-group">
+					<label for="code">Verification Code</label>
+					<input
+						type="text"
+						id="code"
+						name="code"
+						placeholder="000000"
+						pattern="[0-9]{6}"
+						maxlength="6"
+						autocomplete="one-time-code"
+						inputmode="numeric"
+						required
+					/>
+				</div>
+				<button type="submit" class="btn-submit btn-danger" :disabled="loading">
+					<span x-show="!loading">Disable 2FA</span>
+					<span x-show="loading">Disabling...</span>
+				</button>
+			</form>
+		} else {
+			<p class="mfa-info">Scan the QR code with your authenticator app (Google Authenticator, Authy, etc.):</p>
+			<div class="qr-container">
+				<img src={ "data:image/png;base64," + qrCode } alt="2FA QR Code" class="qr-code"/>
+			</div>
+			<div class="secret-display">
+				<label>Manual Entry Code:</label>
+				<code class="secret-code">{ secret }</code>
+			</div>
+			<form
+				x-data="{ loading: false }"
+				@submit.prevent="
+					loading = true;
+					fetch('/admin/2fa/enable', {
+						method: 'POST',
+						body: new FormData($el)
+					})
+					.then(r => r.text())
+					.then(html => {
+						document.getElementById('mfa-setup-form').innerHTML = html;
+					})
+					.catch(() => { loading = false; })
+				"
+			>
+				<input type="hidden" name="secret" value={ secret }/>
+				<div class="form-group">
+					<label for="code">Verification Code</label>
+					<input
+						type="text"
+						id="code"
+						name="code"
+						placeholder="000000"
+						pattern="[0-9]{6}"
+						maxlength="6"
+						autocomplete="one-time-code"
+						inputmode="numeric"
+						required
+					/>
+				</div>
+				<button type="submit" class="btn-submit" :disabled="loading">
+					<span x-show="!loading">Enable 2FA</span>
+					<span x-show="loading">Verifying...</span>
+				</button>
+			</form>
+		}
+	</div>
+}
+
+templ MFAVerify(errorMsg string) {
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<title>Verify 2FA - SAML Proxy</title>
+		<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js" integrity="sha384-iZD2X8o1Zdq0HR5H/7oa8W30WS4No+zWCKUPD7fHRay9I1Gf+C4F8sVmw7zec1wW" crossorigin="anonymous"></script>
+		@authStyles()
+		@mfaStyles()
+	</head>
+	<body>
+		<div class="auth-container">
+			<h1>2FA Verification</h1>
+			<div id="mfa-verify-form">
+				@MFAVerifyForm(errorMsg)
+			</div>
+		</div>
+	</body>
+	</html>
+}
+
+templ MFAVerifyForm(errorMsg string) {
+	<form
+		class="auth-form"
+		x-data="{ loading: false }"
+		@submit.prevent="
+			loading = true;
+			fetch('/admin/2fa/verify', {
+				method: 'POST',
+				body: new FormData($el)
+			})
+			.then(r => {
+				if (r.headers.get('HX-Redirect')) {
+					window.location.href = r.headers.get('HX-Redirect');
+				} else {
+					return r.text();
+				}
+			})
+			.then(html => {
+				if (html) {
+					document.getElementById('mfa-verify-form').innerHTML = html;
+				}
+			})
+			.catch(() => { loading = false; })
+		"
+	>
+		if errorMsg != "" {
+			<div class="error-msg">{ errorMsg }</div>
+		}
+		<p class="mfa-info">Enter the 6-digit code from your authenticator app:</p>
+		<div class="form-group">
+			<label for="code">Verification Code</label>
+			<input
+				type="text"
+				id="code"
+				name="code"
+				placeholder="000000"
+				pattern="[0-9]{6}"
+				maxlength="6"
+				autocomplete="one-time-code"
+				inputmode="numeric"
+				autofocus
+				required
+			/>
+		</div>
+		<button type="submit" class="btn-submit" :disabled="loading">
+			<span x-show="!loading">Verify</span>
+			<span x-show="loading">Verifying...</span>
+		</button>
+		<p class="link-text">
+			<a href="/admin/login">Cancel and return to login</a>
+		</p>
+	</form>
+}
+
+templ mfaStyles() {
+	<style>
+		.mfa-info {
+			color: #888;
+			font-size: 0.9rem;
+			margin-bottom: 1.5rem;
+			text-align: center;
+		}
+		.qr-container {
+			display: flex;
+			justify-content: center;
+			margin: 1.5rem 0;
+		}
+		.qr-code {
+			background: white;
+			padding: 1rem;
+			border-radius: 8px;
+		}
+		.secret-display {
+			background: rgba(255,255,255,0.05);
+			border-radius: 8px;
+			padding: 1rem;
+			margin-bottom: 1.5rem;
+			text-align: center;
+		}
+		.secret-display label {
+			display: block;
+			margin-bottom: 0.5rem;
+			color: #666;
+			font-size: 0.8rem;
+		}
+		.secret-code {
+			font-family: 'JetBrains Mono', monospace;
+			font-size: 0.9rem;
+			color: #e94560;
+			word-break: break-all;
+			user-select: all;
+		}
+		.success-msg {
+			background: rgba(46, 204, 113, 0.15);
+			border: 1px solid #2ecc71;
+			border-radius: 8px;
+			padding: 0.75rem 1rem;
+			margin-bottom: 1.5rem;
+			color: #2ecc71;
+			font-size: 0.9rem;
+			text-align: center;
+		}
+		.btn-danger {
+			background: linear-gradient(135deg, #c0392b, #e74c3c);
+		}
+		.btn-danger:hover:not(:disabled) {
+			background: linear-gradient(135deg, #a93226, #c0392b);
+		}
+		input[type="text"]#code {
+			width: 100%;
+			padding: 1rem;
+			border: 2px solid rgba(233, 69, 96, 0.3);
+			border-radius: 8px;
+			background: rgba(255,255,255,0.05);
+			color: #fff;
+			font-size: 1.5rem;
+			font-family: 'JetBrains Mono', monospace;
+			text-align: center;
+			letter-spacing: 0.5em;
+			outline: none;
+			transition: border-color 0.2s;
+		}
+		input[type="text"]#code:focus {
+			border-color: #e94560;
+		}
+	</style>
+}

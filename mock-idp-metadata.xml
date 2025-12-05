@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" entityID="http://localhost:8081/idp">
+  <IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+    <KeyDescriptor use="signing">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>MIICpDCCAYwCCQDU+pQ4P2PZ3TANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAls
+b2NhbGhvc3QwHhcNMjQwMTAxMDAwMDAwWhcNMjUwMTAxMDAwMDAwWjAUMRIwEAYD
+VQQDDAlsb2NhbGhvc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC7
+o5e7RkPEfNWfBNNL7nxGP1xHnMzBjZjyQz5xQGjEgKMXOxXMKPMb8Jd5nPPON9xF
+QNB3YJWLx5sXDQGPNS3e3wNBz5B1AEBP2D8GnxQnN3wRXrZxVbVQZnK8QOIW7DQP
+5xRAZKCFNJ5BVNQ4LMMQW9CKy5yK3z5Z2Z3Q7IJWL3Q5BVNQ4LMMQW9CKy5yK3z5
+Z2Z3Q7IJWL3Q5BVNQ4LMMQW9CKy5yK3z5Z2Z3Q7IJWL3Q5BVNQ4LMMQW9CKy5yK3
+z5Z2Z3Q7IJWL3Q5BVNQ4LMMQW9CKy5yK3z5Z2Z3Q7IJWL3Q5BVNQ4LMMQW9CKy5y
+K3z5Z2Z3Q7IJWL3Q5BVNQ4LMMQAgMBAAEwDQYJKoZIhvcNAQELBQADggEBAK+CqM
+</ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </KeyDescriptor>
+    <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="http://localhost:8081/sso"/>
+    <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="http://localhost:8081/sso"/>
+  </IDPSSODescriptor>
+</EntityDescriptor>

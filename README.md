@@ -38,13 +38,14 @@ cp config.yaml.example config.yaml
 | `session.timeout`          | Session duration                      | `24h`                            |
 | `session.secret`           | **REQUIRED** 32+ char session secret  | (none)                           |
 | `upstream`                 | Backend service URL                   | `http://localhost:9000`          |
+| `upstream_skip_verify`     | Skip TLS cert verification for upstream | `false`                        |
 | `tls.enabled`              | Enable TLS                            | `false`                          |
 | `tls.cert`                 | TLS certificate path                  | (none)                           |
 | `tls.key`                  | TLS private key path                  | (none)                           |
 
 ### Environment Variables
 
-Override config with: `LISTEN`, `PUBLIC_URL`, `DATABASE_PATH`, `UPSTREAM_URL`, `IDP_METADATA_URL`, `IDP_ENTITY_ID`, `SP_CERT`, `SP_KEY`, `SESSION_TIMEOUT`, `SESSION_SECRET`, `TLS_ENABLED`, `TLS_CERT`, `TLS_KEY`
+Override config with: `LISTEN`, `PUBLIC_URL`, `DATABASE_PATH`, `UPSTREAM_URL`, `UPSTREAM_SKIP_VERIFY`, `IDP_METADATA_URL`, `IDP_ENTITY_ID`, `SP_CERT`, `SP_KEY`, `SESSION_TIMEOUT`, `SESSION_SECRET`, `TLS_ENABLED`, `TLS_CERT`, `TLS_KEY`
 
 ### SAML Configuration
 

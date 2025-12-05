@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
 	"github.com/PhilHem/go-saml-reverse-proxy/backend/config"
 	"github.com/PhilHem/go-saml-reverse-proxy/backend/database"
 	"github.com/PhilHem/go-saml-reverse-proxy/backend/models"
@@ -214,10 +215,18 @@ func SAMLACS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Use AllowIDPInitiated mode based on config
-	assertion, err := SamlMiddleware.ServiceProvider.ParseResponse(r, nil)
+	// Extract possible request IDs from tracking cookies
+	var possibleRequestIDs []string
+	for _, cookie := range r.Cookies() {
+		if strings.HasPrefix(cookie.Name, "saml_") {
+			possibleRequestIDs = append(possibleRequestIDs, strings.TrimPrefix(cookie.Name, "saml_"))
+		}
+	}
+	
+	assertion, err := SamlMiddleware.ServiceProvider.ParseResponse(r, possibleRequestIDs)
 	if err != nil {
-		slog.Warn("SAML ACS failed: assertion parse error", "source", "saml", "error", err.Error())
-		http.Error(w, "Authentication failed", http.StatusUnauthorized)
+		slog.Warn("SAML ACS failed: assertion parse error", "source", "saml", "error", fmt.Sprintf("%+v", err), "request_ids", possibleRequestIDs)
+		http.Error(w, fmt.Sprintf("Authentication failed: %v", err), http.StatusUnauthorized)
 		return
 	}
 

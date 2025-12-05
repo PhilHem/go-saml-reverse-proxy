@@ -12,6 +12,12 @@ func RequireLocalAuth(next http.HandlerFunc) http.HandlerFunc {
 		session, _ := handlers.Store.Get(r, "session")
 		authMethod, _ := session.Values["auth_method"].(string)
 
+		// Check if user is in pending MFA state
+		if _, pending := session.Values["user_id_pending_mfa"].(uint); pending {
+			http.Redirect(w, r, "/admin/2fa/verify", http.StatusSeeOther)
+			return
+		}
+
 		user := handlers.GetCurrentUser(r)
 		if user == nil || authMethod != "local" {
 			http.Redirect(w, r, "/admin/login", http.StatusSeeOther)

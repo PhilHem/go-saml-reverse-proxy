@@ -37,7 +37,7 @@ func authStyles() templ.Component {
 	})
 }
 
-func Login(errorMsg string, email string) templ.Component {
+func Login(errorMsg string, email string, showRegister bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -58,7 +58,7 @@ func Login(errorMsg string, email string) templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>Login - Todo App</title><script defer src=\"https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js\" integrity=\"sha384-6Adm6G1U8xoHlXflGqBJzrK4vAJPKpfQ9yIDDXZn2P76zOJaKLwMZlqRy6nEB3Pw\" crossorigin=\"anonymous\"></script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>Login - Todo App</title><script defer src=\"https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js\" integrity=\"sha384-iZD2X8o1Zdq0HR5H/7oa8W30WS4No+zWCKUPD7fHRay9I1Gf+C4F8sVmw7zec1wW\" crossorigin=\"anonymous\"></script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -70,7 +70,7 @@ func Login(errorMsg string, email string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = LoginForm(errorMsg, email).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = LoginForm(errorMsg, email, showRegister).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -82,7 +82,7 @@ func Login(errorMsg string, email string) templ.Component {
 	})
 }
 
-func LoginForm(errorMsg string, email string) templ.Component {
+func LoginForm(errorMsg string, email string, showRegister bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -139,7 +139,17 @@ func LoginForm(errorMsg string, email string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" required></div><div class=\"form-group\"><label for=\"password\">Password</label> <input type=\"password\" id=\"password\" name=\"password\" placeholder=\"••••••••\" required></div><button type=\"submit\" class=\"btn-submit\" :disabled=\"loading\"><span x-show=\"!loading\">Sign In</span> <span x-show=\"loading\">Signing in...</span></button><p class=\"link-text\">Don't have an account? <a href=\"/admin/register\">Register</a></p></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\" required></div><div class=\"form-group\"><label for=\"password\">Password</label> <input type=\"password\" id=\"password\" name=\"password\" placeholder=\"••••••••\" required></div><button type=\"submit\" class=\"btn-submit\" :disabled=\"loading\"><span x-show=\"!loading\">Sign In</span> <span x-show=\"loading\">Signing in...</span></button> ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if showRegister {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<p class=\"link-text\">Don't have an account? <a href=\"/admin/register\">Register</a></p>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -168,7 +178,7 @@ func Register(errorMsg string, email string) templ.Component {
 			templ_7745c5c3_Var6 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>Register - Todo App</title><script defer src=\"https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js\" integrity=\"sha384-6Adm6G1U8xoHlXflGqBJzrK4vAJPKpfQ9yIDDXZn2P76zOJaKLwMZlqRy6nEB3Pw\" crossorigin=\"anonymous\"></script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>Register - Todo App</title><script defer src=\"https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js\" integrity=\"sha384-iZD2X8o1Zdq0HR5H/7oa8W30WS4No+zWCKUPD7fHRay9I1Gf+C4F8sVmw7zec1wW\" crossorigin=\"anonymous\"></script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -176,7 +186,7 @@ func Register(errorMsg string, email string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "</head><body><div class=\"auth-container\"><h1>✦ register</h1><div id=\"register-form\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "</head><body><div class=\"auth-container\"><h1>✦ register</h1><div id=\"register-form\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -184,7 +194,7 @@ func Register(errorMsg string, email string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</div></div></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "</div></div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -213,43 +223,43 @@ func RegisterForm(errorMsg string, email string) templ.Component {
 			templ_7745c5c3_Var7 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<form class=\"auth-form\" x-data=\"{ loading: false, error: '' }\" @submit.prevent=\"\n\t\t\tloading = true;\n\t\t\terror = '';\n\t\t\tfetch('/admin/register', {\n\t\t\t\tmethod: 'POST',\n\t\t\t\tbody: new FormData($el)\n\t\t\t})\n\t\t\t.then(r => {\n\t\t\t\tif (r.headers.get('HX-Redirect')) {\n\t\t\t\t\twindow.location.href = r.headers.get('HX-Redirect');\n\t\t\t\t} else {\n\t\t\t\t\treturn r.text();\n\t\t\t\t}\n\t\t\t})\n\t\t\t.then(html => {\n\t\t\t\tif (html) {\n\t\t\t\t\tdocument.getElementById('register-form').innerHTML = html;\n\t\t\t\t}\n\t\t\t})\n\t\t\t.catch(() => {\n\t\t\t\terror = 'Something went wrong';\n\t\t\t\tloading = false;\n\t\t\t})\n\t\t\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<form class=\"auth-form\" x-data=\"{ loading: false, error: '' }\" @submit.prevent=\"\n\t\t\tloading = true;\n\t\t\terror = '';\n\t\t\tfetch('/admin/register', {\n\t\t\t\tmethod: 'POST',\n\t\t\t\tbody: new FormData($el)\n\t\t\t})\n\t\t\t.then(r => {\n\t\t\t\tif (r.headers.get('HX-Redirect')) {\n\t\t\t\t\twindow.location.href = r.headers.get('HX-Redirect');\n\t\t\t\t} else {\n\t\t\t\t\treturn r.text();\n\t\t\t\t}\n\t\t\t})\n\t\t\t.then(html => {\n\t\t\t\tif (html) {\n\t\t\t\t\tdocument.getElementById('register-form').innerHTML = html;\n\t\t\t\t}\n\t\t\t})\n\t\t\t.catch(() => {\n\t\t\t\terror = 'Something went wrong';\n\t\t\t\tloading = false;\n\t\t\t})\n\t\t\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if errorMsg != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<div class=\"error-msg\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<div class=\"error-msg\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(errorMsg)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `frontend/templates/login.templ`, Line: 251, Col: 36}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `frontend/templates/login.templ`, Line: 253, Col: 36}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "</div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "</div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 16, "<template x-if=\"error\"><div class=\"error-msg\" x-text=\"error\"></div></template><div class=\"form-group\"><label for=\"email\">Email</label> <input type=\"email\" id=\"email\" name=\"email\" placeholder=\"you@example.com\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<template x-if=\"error\"><div class=\"error-msg\" x-text=\"error\"></div></template><div class=\"form-group\"><label for=\"email\">Email</label> <input type=\"email\" id=\"email\" name=\"email\" placeholder=\"you@example.com\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(email)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `frontend/templates/login.templ`, Line: 263, Col: 17}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `frontend/templates/login.templ`, Line: 265, Col: 17}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "\" required></div><div class=\"form-group\"><label for=\"password\">Password</label> <input type=\"password\" id=\"password\" name=\"password\" placeholder=\"••••••••\" minlength=\"8\" title=\"Password must be 8+ characters with uppercase, number, and special character\" required></div><button type=\"submit\" class=\"btn-submit\" :disabled=\"loading\"><span x-show=\"!loading\">Create Account</span> <span x-show=\"loading\">Creating...</span></button><p class=\"link-text\">Already have an account? <a href=\"/admin/login\">Sign in</a></p></form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\" required></div><div class=\"form-group\"><label for=\"password\">Password</label> <input type=\"password\" id=\"password\" name=\"password\" placeholder=\"••••••••\" minlength=\"8\" title=\"Password must be 8+ characters with uppercase, number, and special character\" required></div><button type=\"submit\" class=\"btn-submit\" :disabled=\"loading\"><span x-show=\"!loading\">Create Account</span> <span x-show=\"loading\">Creating...</span></button><p class=\"link-text\">Already have an account? <a href=\"/admin/login\">Sign in</a></p></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
